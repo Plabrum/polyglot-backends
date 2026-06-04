@@ -1,0 +1,13 @@
+[project]
+name = "polyglot-litestar"
+version = "0.1.0"
+description = "Litestar + Advanced Alchemy backend over Postgres"
+requires-python = ">=3.11"
+dependencies = [
+    "litestar[standard]>=2.12",
+    "advanced-alchemy>=0.27",
+    "asyncpg>=0.29",
+]
+
+[tool.uv]
+package = false

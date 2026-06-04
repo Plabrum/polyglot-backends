@@ -1,0 +1,19 @@
+# python
+.venv/
+__pycache__/
+uv.lock
+
+# go
+/go-huma-ent/polyglot
+go-huma-ent/go.sum
+
+# ocaml
+_build/
+
+# elixir
+/elixir-plug-ecto/_build/
+/elixir-plug-ecto/deps/
+/elixir-plug-ecto/mix.lock
+
+# env
+.env
