@@ -15,5 +15,9 @@ _build/
 /elixir-plug-ecto/deps/
 /elixir-plug-ecto/mix.lock
 
+# rust
+/rust-axum-seaorm/target/
+/rust-axum-seaorm/Cargo.lock
+
 # env
 .env

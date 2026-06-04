@@ -6,6 +6,7 @@ export PG_PY   := "postgresql+asyncpg://app:app@localhost:5434/app"
 export PG_GO   := "postgres://app:app@localhost:5434/app?sslmode=disable"
 export PG_ML   := "postgresql://app:app@localhost:5434/app"
 export PG_EX   := "ecto://app:app@localhost:5434/app"
+export PG_RS   := "postgres://app:app@localhost:5434/app"
 
 default:
     @just --list
@@ -62,13 +63,19 @@ ex-install:
 ex-dev: db
     cd elixir-plug-ecto && DATABASE_URL="$PG_EX" mix run --no-halt
 
-# --- smoke test (run the four `*-dev` recipes in separate terminals first) ---
+# --- rust (axum + sea-orm + utoipa), port 8005 ---
+
+rs-dev: db
+    cd rust-axum-seaorm && DATABASE_URL="$PG_RS" cargo run
+
+# --- smoke test (run the five `*-dev` recipes in separate terminals first) ---
 
 smoke:
     @echo "== python (8001) ==" && curl -s localhost:8001/health && echo
     @echo "== go     (8002) ==" && curl -s localhost:8002/health && echo
     @echo "== ocaml  (8003) ==" && curl -s localhost:8003/health && echo
     @echo "== elixir (8004) ==" && curl -s localhost:8004/health && echo
+    @echo "== rust   (8005) ==" && curl -s localhost:8005/health && echo
     @echo "== create via go, list via python ==" \
         && curl -s -X POST localhost:8002/vessels -H 'content-type: application/json' \
              -d '{"name":"Black Pearl","length_m":40.5}' && echo \

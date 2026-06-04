@@ -1,9 +1,9 @@
 # polyglot-backends
 
-Four implementations of the same tiny web backend — **Python (Litestar)**,
-**Go (huma + ent)**, **OCaml (Dream + Caqti)**, and **Elixir (Plug + Ecto)** —
-all talking to one shared Postgres database. Built to compare the stacks side by
-side.
+Five implementations of the same tiny web backend — **Python (Litestar)**,
+**Go (huma + ent)**, **OCaml (Dream + Caqti)**, **Elixir (Plug + Ecto)**, and
+**Rust (Axum + SeaORM)** — all talking to one shared Postgres database. Built to
+compare the stacks side by side.
 
 Every service exposes the same API over a shared `vessels` table:
 
@@ -19,10 +19,11 @@ Every service exposes the same API over a shared `vessels` table:
 | Go      | huma + ent + pgx                   | 8002 |
 | OCaml   | Dream + Caqti + caqti-driver-postgresql | 8003 |
 | Elixir  | Plug + Bandit + Ecto + Postgrex    | 8004 |
+| Rust    | Axum + SeaORM + utoipa             | 8005 |
 
-Postgres runs in Docker; the three backends run locally against it. The schema
+Postgres runs in Docker; the five backends run locally against it. The schema
 lives in `db/init/001_schema.sql` and is owned by the database — no service runs
-migrations, so all three see identical data.
+migrations, so all five see identical data.
 
 ## Prerequisites
 
@@ -35,6 +36,8 @@ migrations, so all three see identical data.
     `export PKG_CONFIG_PATH="/opt/homebrew/opt/libpq/lib/pkgconfig"` before `opam install`.
 - Elixir toolchain: `elixir` 1.15+ / OTP 25+ (`mix` ships with it). On macOS:
   `brew install elixir`. Deps install with `just ex-install` (`mix deps.get`).
+- Rust toolchain: `cargo` / `rustc` 1.75+ (via [rustup](https://rustup.rs)).
+  `just rs-dev` fetches crates and compiles on first run.
 
 Postgres is published on host port **5434** (to avoid colliding with other local
 Postgres instances); the connection strings in the justfile already use it.
@@ -49,8 +52,9 @@ just py-dev        # http://localhost:8001
 just go-dev        # http://localhost:8002  (also serves OpenAPI docs at /docs)
 just ml-dev        # http://localhost:8003
 just ex-dev        # http://localhost:8004
+just rs-dev        # http://localhost:8005  (also serves OpenAPI docs at /docs)
 
-just smoke         # curl /health on all four + a cross-service write/read
+just smoke         # curl /health on all five + a cross-service write/read
 ```
 
 Try it:
@@ -70,6 +74,7 @@ python-litestar/         uv project; app/main.py is the whole service
 go-huma-ent/             ent schema in ent/schema/, `just go-gen` regenerates the client
 ocaml-dream/             dune project; bin/main.ml is the whole service
 elixir-plug-ecto/        mix project; lib/vessels/ holds the repo, schema, and router
+rust-axum-seaorm/        cargo project; src/main.rs is the service, src/entity/ the SeaORM model
 justfile                 db + per-service dev recipes
 docker-compose.yml       Postgres only
 ```
@@ -94,3 +99,11 @@ docker-compose.yml       Postgres only
   trick as OCaml) so no timestamp decoder is needed. `mix deps.get` installs
   deps; `mix run --no-halt` boots the supervision tree. The DB owns the schema,
   so the repo never runs `ecto.create`/`ecto.migrate`.
+- **Rust** — Axum routes share a SeaORM `DatabaseConnection` pool via `State`.
+  The `vessel` entity in `src/entity/` is the hand-written SeaORM model mapping
+  the existing table (no migrations); `utoipa` derives the OpenAPI spec from the
+  `VesselIn`/`VesselOut` wire structs and `utoipa-swagger-ui` serves it at
+  `/docs`. SeaORM has no lazy loading or dirty-tracking, so reads and writes are
+  explicit (`find()` / `ActiveModel::insert`); `id` and `created_at` are left
+  `NotSet` so Postgres fills them via `RETURNING`. Cargo fetches and compiles on
+  first `just rs-dev`.
